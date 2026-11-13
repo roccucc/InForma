@@ -30,39 +30,4 @@ Le preferenze di promemoria e frequenza sono memorizzate, ma l'invio automatico
 a app chiusa richiede ancora l'integrazione con le notifiche locali native di
 Android e iOS e la configurazione dei relativi permessi nella build.
 
-## Android — APK
 
-Buildozer compila su Linux. Su Windows si può usare WSL con una distribuzione
-Linux; per l'installazione di Kivy e Buildozer seguire la documentazione
-Buildozer per la propria distribuzione.
-
-```bash
-python3 -m pip install -r requirements.txt buildozer
-buildozer android debug
-```
-
-L'APK di debug viene creato in `bin/`. Per distribuirlo fuori dal proprio
-dispositivo di test occorre generare una build firmata per il rilascio.
-
-## iPhone — app iOS
-
-La build iOS richiede macOS, Xcode e gli strumenti `kivy-ios`. Su un Mac, dopo
-aver installato gli strumenti richiesti dalla documentazione di Kivy:
-
-```bash
-python3 -m pip install kivy-ios
-toolchain build python3 kivy
-toolchain create InForma .
-```
-
-Aprire il progetto Xcode generato, configurare il proprio Team di firma e
-compilare su un iPhone o creare un archivio da distribuire con TestFlight. Non
-è possibile installare un APK su iPhone né produrre la build iOS direttamente
-da Windows.
-
-## Avvio sul computer
-
-```bash
-python -m pip install -r requirements.txt
-python main.py
-```
