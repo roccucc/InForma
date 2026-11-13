@@ -1,7 +1,7 @@
-name: Build Forma iOS IPA
+name: Build Forma iOS IPAname: Build Forma iOS IPA
 
 on:
-  workflow_dispatch: # Ti permette di avviare la compilazione manualmente con un clic
+  workflow_dispatch:
   push:
     branches: [ main ]
 
@@ -28,6 +28,14 @@ jobs:
           python3 -m pip install --upgrade pip
           python3 -m pip install cython kivy-ios
 
+      - name: Ripristina cache di kivy-ios
+        uses: actions/cache@v4
+        with:
+          path: |
+            build
+            dist
+          key: kivy-ios-arm64-v1
+
       - name: Compila Python3 e Kivy per iOS
         run: |
           toolchain build python3 kivy
@@ -38,9 +46,9 @@ jobs:
 
       - name: Compila l'app e genera l'IPA non firmato
         run: |
-          cd Forma-ios
-          xcodebuild -project Forma.xcodeproj \
-            -scheme Forma \
+          cd forma-ios
+          xcodebuild -project forma.xcodeproj \
+            -scheme forma \
             -configuration Release \
             -sdk iphoneos \
             -derivedDataPath build \
@@ -49,7 +57,7 @@ jobs:
             CODE_SIGNING_ALLOWED=NO
 
           mkdir -p Payload
-          cp -r build/Build/Products/Release-iphoneos/Forma.app Payload/
+          cp -r build/Build/Products/Release-iphoneos/forma.app Payload/
           zip -r ../Forma.ipa Payload
 
       - name: Carica il file Forma.ipa per il download
