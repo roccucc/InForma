@@ -34,15 +34,18 @@ jobs:
           path: |
             build
             dist
-          key: kivy-ios-arm64-v1
+          key: kivy-ios-arm64-v3
 
       - name: Compila Python3 e Kivy per iOS
         run: |
           toolchain build python3 kivy
 
-      - name: Crea il progetto Xcode Forma
+      - name: Prepara sorgenti e crea il progetto Xcode Forma
         run: |
-          toolchain create Forma .
+          mkdir -p app_src
+          cp main.py app_src/
+          [ -f requirements.txt ] && cp requirements.txt app_src/ || true
+          toolchain create Forma app_src
 
       - name: Compila l'app e genera l'IPA non firmato
         run: |
@@ -51,7 +54,10 @@ jobs:
             -scheme forma \
             -configuration Release \
             -sdk iphoneos \
+            -arch arm64 \
             -derivedDataPath build \
+            IPHONEOS_DEPLOYMENT_TARGET=13.0 \
+            ENABLE_BITCODE=NO \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO
