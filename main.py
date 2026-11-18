@@ -40,7 +40,7 @@ EXERCISES = {
         "Croci manubri panca piana", "Croci manubri panca inclinata",
         "Pec deck", "Push-up", "Push-up inclinati",
         "Push-up con sovraccarico", "Dip alle parallele (petto)",
-        "Pullover manubrio", "Squeeze press manubri",
+        "Pullover manubrio", "Squeeze press manubri", "Distensioni manubri panca inclinata",
     ],
     "Schiena": [
         "Stacco da terra", "Stacco rumeno", "Stacco sumo",
@@ -52,17 +52,17 @@ EXERCISES = {
         "Trazioni assistite", "Chin-up", "Pulldown braccia tese",
         "Pullover ai cavi", "Seal row", "Meadows row",
         "Back extension", "Iperestensioni", "Good morning",
-        "Scrollate bilanciere", "Scrollate manubri",
+        "Scrollate bilanciere", "Scrollate manubri", "iperestensioni su panca inclinata", "pull up", "Rematore manubrio al dorsy bar",
     ],
     "Spalle": [
         "Military press bilanciere", "Shoulder press manubri",
         "Arnold press", "Shoulder press macchina",
-        "Alzate laterali manubri", "Alzate laterali ai cavi",
+        "Alzate laterali manubri", "Alzate laterali al cavo basso",
         "Alzate laterali macchina", "Alzate frontali manubri",
         "Alzate frontali bilanciere", "Face pull",
         "Reverse fly ai cavi", "Reverse pec deck",
         "Tirate al mento bilanciere", "Landmine press",
-        "Upright row ai cavi", "Y-raise",
+        "Upright row ai cavi", "Y-raise", "Distensioni seduto dietro la nuca multipower", "deltoidi posteriori al cavo singolo",
     ],
     "Bicipiti": [
         "Curl bilanciere", "Curl bilanciere EZ", "Curl manubri alternato",
@@ -70,14 +70,14 @@ EXERCISES = {
         "Curl preacher bilanciere EZ", "Curl preacher manubrio",
         "Curl ai cavi bassi", "Curl ai cavi alti",
         "Curl concentrato", "Curl spider", "Curl su panca inclinata",
-        "Curl al cavo con barra", "Zottman curl",
+        "Curl al cavo con barra", "Zottman curl","Curl a martello ai cavi bassi", "Curl con spalla estesa al cavo basso", "Curl con sbarra a z presa stretta",
     ],
     "Tricipiti": [
-        "Pushdown ai cavi", "Pushdown corda", "Pushdown presa inversa",
+        "Pushdown ai cavi incrociati", "Pushdown corda", "Pushdown presa inversa",
         "French press bilanciere EZ", "French press manubri",
         "Estensioni sopra la testa ai cavi", "Estensioni manubrio sopra la testa",
         "Skull crusher", "Panca presa stretta", "Dip alle parallele (tricipiti)",
-        "Kickback manubrio", "Kickback ai cavi", "JM press",
+        "Kickback manubrio", "Kickback ai cavi", "JM press", "push up su rialzo", "Pull-over con manubrio su panca perpendicolare",
     ],
     "Gambe": [
         "Squat bilanciere", "Squat frontale", "Goblet squat",
@@ -86,23 +86,23 @@ EXERCISES = {
         "Leg curl in piedi", "Affondi camminati", "Affondi indietro",
         "Bulgarian split squat", "Step-up", "Stacco rumeno",
         "Stacco a gambe tese", "Calf raise in piedi",
-        "Calf raise seduto", "Calf raise alla leg press",
-        "Nordic hamstring curl", "Sissy squat", "Wall sit",
+        "Calf pressa seduto", "Calf raise alla leg press",
+        "Nordic hamstring curl", "Sissy squat", "Wall sit", "Estensione una gamba alla pressa orizzontale",
     ],
     "Glutei": [
         "Hip thrust bilanciere", "Hip thrust macchina", "Glute bridge",
         "Glute bridge a una gamba", "Kickback ai cavi",
-        "Kickback macchina", "Abduzioni macchina", "Abduzioni ai cavi",
+        "Kickback macchina", "Abduttori macchina", "Abduzioni ai cavi",
         "Abduzioni con elastico", "Pull-through ai cavi",
         "Frog pump", "Donkey kick", "Fire hydrant",
-        "Back extension focus glutei",
+        "Back extension focus glutei", "Adduttori macchina",
     ],
     "Addome": [
         "Crunch", "Crunch ai cavi", "Crunch macchina",
         "Reverse crunch", "Leg raise alla sbarra", "Leg raise alla panca",
         "Plank", "Side plank", "Ab wheel rollout",
         "Pallof press", "Russian twist", "Dead bug",
-        "Hollow body hold", "Mountain climber", "Bicycle crunch",
+        "Hollow body hold", "Mountain climber", "Bicycle crunch", "Plank sui gomiti", "Crunch al cavo alto in ginocchio",
     ],
     "Polpacci e avambracci": [
         "Calf raise in piedi", "Calf raise seduto",
@@ -256,6 +256,8 @@ class DataStore:
             day.setdefault("id", "day-{}".format(index))
             day.setdefault("name", "Giorno {}".format(index))
             day.setdefault("exercises", [])
+            for exercise in day["exercises"]:
+                exercise["notes"] = str(exercise.get("notes", ""))
         while len(days) < 2:
             index = len(days) + 1
             days.append({
@@ -283,9 +285,9 @@ class BaseScreen(Screen):
         screen_name = kwargs.get("name")
         super().__init__(**kwargs)
         self.app_ref = app
-        self.root_box = BoxLayout(orientation="vertical", spacing=dp(8), padding=(dp(18), dp(10)))
-        heading = BoxLayout(size_hint_y=None, height=dp(48), spacing=dp(8))
-        title_label = ui_label(title, size=25, height=dp(48), bold=True)
+        self.root_box = BoxLayout(orientation="vertical", spacing=dp(6), padding=(dp(14), dp(8)))
+        heading = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(8))
+        title_label = ui_label(title, size=23, height=dp(44), bold=True)
         title_label.size_hint_x = 1
         heading.add_widget(title_label)
         settings_button = make_button(
@@ -309,13 +311,13 @@ class BaseScreen(Screen):
         self.bind(on_pre_enter=self.refresh)
 
     def _navigation(self):
-        bar = BoxLayout(size_hint_y=None, height=dp(54), spacing=dp(8))
+        bar = BoxLayout(size_hint_y=None, height=dp(52), spacing=dp(6))
         for label, name in (
             ("Oggi", "home"), ("Scheda", "plans"),
             ("Analisi", "analytics"), ("Storico", "history"),
         ):
             bar.add_widget(make_button(label, lambda _button, target=name: self.app_ref.go(target),
-                                       color=CARD_ALT, height=dp(48)))
+                                       color=CARD_ALT, height=dp(46)))
         return bar
 
     def refresh(self, *_):
@@ -394,7 +396,7 @@ class PlansScreen(BaseScreen):
             day_count = len(plan["days"])
             exercise_count = sum(len(day["exercises"]) for day in plan["days"])
             is_current = plan["id"] == self.app_ref.store.data["current_plan_id"]
-            card = Card(orientation="vertical", size_hint_y=None, height=dp(150))
+            card = Card(orientation="vertical", size_hint_y=None, height=dp(168))
             card.add_widget(ui_label(
                 ("✓  " if is_current else "") + plan["name"],
                 18, MINT if is_current else TEXT, bold=True
@@ -405,12 +407,16 @@ class PlansScreen(BaseScreen):
             actions = BoxLayout(size_hint_y=None, height=dp(42), spacing=dp(8))
             if not is_current:
                 actions.add_widget(make_button(
-                    "Rendi attiva", lambda _button, plan_id=plan["id"]: self.select_plan(plan_id),
+                    "Attiva", lambda _button, plan_id=plan["id"]: self.select_plan(plan_id),
                     color=CARD_ALT, height=dp(42)
                 ))
             actions.add_widget(make_button(
                 "Modifica", lambda _button, selected=plan: self.edit_plan(selected),
                 color=ACCENT, height=dp(42)
+            ))
+            actions.add_widget(make_button(
+                "Elimina", lambda _button, selected=plan: self.confirm_delete_plan(selected),
+                color=(0.45, 0.18, 0.22, 1), height=dp(42)
             ))
             card.add_widget(actions)
             self.body.add_widget(card)
@@ -421,6 +427,37 @@ class PlansScreen(BaseScreen):
         self.app_ref.store.data["current_plan_id"] = plan_id
         self.app_ref.store.save()
         self.refresh()
+
+    def confirm_delete_plan(self, plan):
+        content = BoxLayout(orientation="vertical", spacing=dp(12), padding=dp(14))
+        content.add_widget(ui_label(
+            "La scheda e i suoi giorni verranno eliminati. Gli allenamenti già salvati resteranno nello storico.",
+            13, TEXT, height=dp(64)
+        ))
+        popup = Popup(title="Eliminare questa scheda?", content=content, size_hint=(0.9, 0.34))
+        actions = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(8))
+        actions.add_widget(make_button(
+            "Annulla", lambda *_: popup.dismiss(), color=CARD_ALT, height=dp(44)
+        ))
+
+        def delete(_button):
+            plans = self.app_ref.store.data["plans"]
+            if len(plans) <= 1:
+                popup.dismiss()
+                self.app_ref.message("Mantieni almeno una scheda. Puoi crearne un'altra prima di eliminare questa.")
+                return
+            plans.remove(plan)
+            if self.app_ref.store.data["current_plan_id"] == plan["id"]:
+                self.app_ref.store.data["current_plan_id"] = plans[0]["id"]
+            self.app_ref.store.save()
+            popup.dismiss()
+            self.refresh()
+
+        actions.add_widget(make_button(
+            "Elimina", delete, color=(0.45, 0.18, 0.22, 1), height=dp(44)
+        ))
+        content.add_widget(actions)
+        popup.open()
 
     def create_plan(self, *_):
         plans = self.app_ref.store.data["plans"]
@@ -473,32 +510,56 @@ class PlansScreen(BaseScreen):
         def redraw_exercises():
             exercise_list.clear_widgets()
             for index, exercise in enumerate(selected_day()["exercises"]):
-                row = BoxLayout(size_hint_y=None, height=dp(40), spacing=dp(6))
-                name_label = ui_label(exercise["name"], 12, TEXT)
-                row.add_widget(name_label)
+                item = BoxLayout(
+                    orientation="vertical", size_hint_y=None, height=dp(128), spacing=dp(4)
+                )
+                name_label = ui_label(exercise["name"], 13, TEXT, height=dp(32), bold=True)
+                name_label.bind(
+                    width=lambda label, width: setattr(label, "text_size", (width, None))
+                )
+                item.add_widget(name_label)
+                row = BoxLayout(size_hint_y=None, height=dp(34), spacing=dp(6))
                 minus = make_button(
                     "−", lambda _button, i=index: change_sets(i, -1),
-                    color=CARD_ALT, height=dp(36)
+                    color=CARD_ALT, height=dp(34)
                 )
                 minus.size_hint_x, minus.width = None, dp(34)
                 row.add_widget(minus)
-                set_count = ui_label(str(exercise.get("sets", 3)), 12, MUTED, height=dp(36))
+                set_count = ui_label(str(exercise.get("sets", 3)), 12, MUTED, height=dp(34))
                 set_count.size_hint_x = None
                 set_count.width = dp(24)
                 row.add_widget(set_count)
                 plus = make_button(
                     "+", lambda _button, i=index: change_sets(i, 1),
-                    color=CARD_ALT, height=dp(36)
+                    color=CARD_ALT, height=dp(34)
                 )
                 plus.size_hint_x, plus.width = None, dp(34)
                 row.add_widget(plus)
                 remove = make_button(
                     "Rimuovi", lambda _button, i=index: remove_exercise(i),
-                    color=(0.45, 0.18, 0.22, 1), height=dp(36)
+                    color=(0.45, 0.18, 0.22, 1), height=dp(34)
                 )
-                remove.size_hint_x, remove.width = None, dp(68)
+                remove.size_hint_x, remove.width = None, dp(74)
                 row.add_widget(remove)
-                exercise_list.add_widget(row)
+                item.add_widget(row)
+                notes = TextInput(
+                    hint_text="Note per questo esercizio",
+                    text=exercise.get("notes", ""),
+                    multiline=True,
+                    size_hint_y=None,
+                    height=dp(52),
+                    padding=(dp(10), dp(8)),
+                    background_normal="",
+                    background_active="",
+                    background_color=CARD_ALT,
+                    foreground_color=TEXT,
+                    hint_text_color=MUTED,
+                    cursor_color=ACCENT,
+                    font_size=sp(13),
+                )
+                notes.bind(text=lambda _input, value, entry=exercise: entry.__setitem__("notes", value))
+                item.add_widget(notes)
+                exercise_list.add_widget(item)
 
         def change_sets(index, amount):
             exercise = selected_day()["exercises"][index]
@@ -515,7 +576,7 @@ class PlansScreen(BaseScreen):
         def append_exercise(exercise):
             exercises = selected_day()["exercises"]
             if not any(item["name"] == exercise for item in exercises):
-                exercises.append({"name": exercise, "sets": 3})
+                exercises.append({"name": exercise, "sets": 3, "notes": ""})
                 redraw_exercises()
 
         def select_day(_spinner, day_name):
@@ -650,23 +711,55 @@ class WorkoutScreen(BaseScreen):
             ),
             14, MUTED
         ))
-        for exercise in workout["exercises"]:
-            self.add_exercise_form(exercise)
-        self.body.add_widget(make_button("＋ Aggiungi esercizio", self.add_workout_exercise,
-                                         color=CARD_ALT))
-        self.body.add_widget(make_button("TERMINA E SALVA ALLENAMENTO", self.finish_workout,
-                                         color=MINT, text_color=BG, height=dp(54)))
+        if not workout["exercises"]:
+            self.body.add_widget(ui_label(
+                "Questa giornata non ha ancora esercizi. Aggiungili dalla sezione Scheda.",
+                14, MUTED, height=dp(54)
+            ))
+        else:
+            index = min(workout.get("exercise_index", 0), len(workout["exercises"]) - 1)
+            workout["exercise_index"] = index
+            self.body.add_widget(ui_label(
+                "ESERCIZIO {} DI {}".format(index + 1, len(workout["exercises"])),
+                13, MINT, height=dp(32), bold=True
+            ))
+            self.add_exercise_form(workout["exercises"][index])
+            if index == len(workout["exercises"]) - 1:
+                self.body.add_widget(make_button(
+                    "TERMINA E SALVA ALLENAMENTO", self.finish_workout,
+                    color=MINT, text_color=BG, height=dp(54)
+                ))
+            else:
+                self.body.add_widget(make_button(
+                    "PROSSIMO ESERCIZIO", self.next_exercise,
+                    color=ACCENT, height=dp(54)
+                ))
+            previous = make_button(
+                "← ESERCIZIO PRECEDENTE", self.previous_exercise,
+                color=CARD_ALT, height=dp(46)
+            )
+            previous.disabled = index == 0
+            self.body.add_widget(previous)
         self.body.add_widget(make_button("Annulla", self.cancel_workout, color=(0.25, 0.29, 0.37, 1)))
 
     def add_exercise_form(self, exercise):
-        card = Card(orientation="vertical", size_hint_y=None, height=dp(120 + len(exercise["sets"]) * 52))
-        card.add_widget(ui_label(exercise["name"], 16, TEXT, bold=True))
+        notes = exercise.get("notes", "").strip()
+        card_height = 130 + len(exercise["sets"]) * 52 + (50 if notes else 0)
+        card = Card(orientation="vertical", size_hint_y=None, height=dp(card_height))
+        name_label = ui_label(exercise["name"], 16, TEXT, height=dp(44), bold=True)
+        name_label.bind(width=lambda label, width: setattr(label, "text_size", (width, None)))
+        card.add_widget(name_label)
+        if notes:
+            notes_label = ui_label("Note: {}".format(notes), 13, MUTED, height=dp(50))
+            notes_label.bind(width=lambda label, width: setattr(label, "text_size", (width, None)))
+            card.add_widget(notes_label)
         card.add_widget(ui_label("Serie     Ripetizioni          Peso (kg)", 11, MUTED))
         fields = []
         for index, set_data in enumerate(exercise["sets"], start=1):
             row = BoxLayout(size_hint_y=None, height=dp(42), spacing=dp(8))
             set_number = ui_label(str(index), 13, MUTED, height=dp(42))
-            set_number.size_hint_x = 0.25
+            set_number.size_hint_x = None
+            set_number.width = dp(44)
             row.add_widget(set_number)
             reps = make_input("Reps", input_filter="int", text=set_data.get("reps", ""))
             weight = make_input("kg", input_filter="float", text=set_data.get("weight", ""))
@@ -675,29 +768,62 @@ class WorkoutScreen(BaseScreen):
             card.add_widget(row)
             fields.append((reps, weight))
         self.body.add_widget(card)
-        self.entries.append((exercise, fields))
+        self.entries = [(exercise, fields)]
 
-    def add_workout_exercise(self, *_):
-        self.app_ref.current_plans_screen.show_exercise_picker(self.append_workout_exercise)
+    def save_current_exercise(self, require_complete):
+        if not self.entries:
+            return True
+        exercise, fields = self.entries[0]
+        saved_sets = []
+        try:
+            for reps_input, weight_input in fields:
+                reps_text = reps_input.text.strip()
+                weight_text = weight_input.text.strip().replace(",", ".")
+                if require_complete and (not reps_text or not weight_text):
+                    raise ValueError("Completa ripetizioni e peso per ogni serie.")
+                if require_complete:
+                    reps = int(reps_text)
+                    weight = float(weight_text)
+                    if reps < 1 or weight < 0:
+                        raise ValueError("Inserisci ripetizioni positive e un peso non negativo.")
+                saved_sets.append({"reps": reps_text, "weight": weight_text})
+        except ValueError as error:
+            self.app_ref.message(str(error))
+            return False
+        exercise["sets"] = saved_sets
+        return True
 
-    def append_workout_exercise(self, name):
-        workout = self.app_ref.active_workout
-        if any(item["name"] == name for item in workout["exercises"]):
+    def next_exercise(self, *_):
+        if not self.save_current_exercise(require_complete=True):
             return
-        workout["exercises"].append({"name": name, "sets": [{"reps": "", "weight": ""} for _ in range(3)]})
+        workout = self.app_ref.active_workout
+        workout["exercise_index"] += 1
+        self.refresh()
+
+    def previous_exercise(self, *_):
+        if not self.save_current_exercise(require_complete=False):
+            return
+        workout = self.app_ref.active_workout
+        workout["exercise_index"] = max(0, workout["exercise_index"] - 1)
         self.refresh()
 
     def finish_workout(self, *_):
-        if not self.entries:
+        workout = self.app_ref.active_workout
+        if not workout or not workout["exercises"]:
             self.app_ref.message("Aggiungi almeno un esercizio prima di salvare.")
+            return
+        if workout["exercise_index"] < len(workout["exercises"]) - 1:
+            self.app_ref.message("Completa prima tutti gli esercizi.")
+            return
+        if not self.save_current_exercise(require_complete=True):
             return
         logged_exercises = []
         try:
-            for exercise, fields in self.entries:
+            for exercise in workout["exercises"]:
                 sets = []
-                for reps_input, weight_input in fields:
-                    reps_text = reps_input.text.strip()
-                    weight_text = weight_input.text.strip().replace(",", ".")
+                for set_data in exercise["sets"]:
+                    reps_text = str(set_data.get("reps", "")).strip()
+                    weight_text = str(set_data.get("weight", "")).strip().replace(",", ".")
                     if not reps_text or not weight_text:
                         raise ValueError("Completa ripetizioni e peso per ogni serie.")
                     reps = int(reps_text)
@@ -709,7 +835,6 @@ class WorkoutScreen(BaseScreen):
         except ValueError as error:
             self.app_ref.message(str(error))
             return
-        workout = self.app_ref.active_workout
         completed_at = datetime.now().isoformat(timespec="seconds")
         self.app_ref.store.data["sessions"].append({
             "date": date.today().isoformat(),
@@ -1260,9 +1385,11 @@ class GymTrackerApp(App):
             "day_name": day["name"],
             "exercises": [
                 {"name": exercise["name"],
+                 "notes": exercise.get("notes", ""),
                  "sets": [{"reps": "", "weight": ""} for _ in range(exercise.get("sets", 3))]}
                 for exercise in day["exercises"]
             ],
+                "exercise_index": 0,
         }
         self.go("workout")
 
