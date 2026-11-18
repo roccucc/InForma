@@ -258,6 +258,10 @@ class DataStore:
             day.setdefault("exercises", [])
             for exercise in day["exercises"]:
                 exercise["notes"] = str(exercise.get("notes", ""))
+                try:
+                    exercise["rest_seconds"] = max(0, int(exercise.get("rest_seconds", 60)))
+                except (TypeError, ValueError):
+                    exercise["rest_seconds"] = 60
         while len(days) < 2:
             index = len(days) + 1
             days.append({
@@ -511,7 +515,7 @@ class PlansScreen(BaseScreen):
             exercise_list.clear_widgets()
             for index, exercise in enumerate(selected_day()["exercises"]):
                 item = BoxLayout(
-                    orientation="vertical", size_hint_y=None, height=dp(128), spacing=dp(4)
+                    orientation="vertical", size_hint_y=None, height=dp(176), spacing=dp(4)
                 )
                 name_label = ui_label(exercise["name"], 13, TEXT, height=dp(32), bold=True)
                 name_label.bind(
@@ -559,6 +563,21 @@ class PlansScreen(BaseScreen):
                 )
                 notes.bind(text=lambda _input, value, entry=exercise: entry.__setitem__("notes", value))
                 item.add_widget(notes)
+                rest_row = BoxLayout(size_hint_y=None, height=dp(42), spacing=dp(6))
+                rest_row.add_widget(ui_label("Recupero", 13, TEXT, height=dp(42)))
+                rest_input = make_input(
+                    "secondi", input_filter="int",
+                    text=str(exercise.get("rest_seconds", 60))
+                )
+                rest_input.size_hint_x = None
+                rest_input.width = dp(88)
+                rest_input.height = dp(42)
+                rest_input.bind(text=lambda _input, value, entry=exercise: entry.__setitem__(
+                    "rest_seconds", int(value) if value else 0
+                ))
+                rest_row.add_widget(rest_input)
+                rest_row.add_widget(ui_label("sec · 0 = nessuno", 11, MUTED, height=dp(42)))
+                item.add_widget(rest_row)
                 exercise_list.add_widget(item)
 
         def change_sets(index, amount):
@@ -576,7 +595,12 @@ class PlansScreen(BaseScreen):
         def append_exercise(exercise):
             exercises = selected_day()["exercises"]
             if not any(item["name"] == exercise for item in exercises):
-                exercises.append({"name": exercise, "sets": 3, "notes": ""})
+                exercises.append({
+                    "name": exercise,
+                    "sets": 3,
+                    "notes": "",
+                    "rest_seconds": 60,
+                })
                 redraw_exercises()
 
         def select_day(_spinner, day_name):
@@ -652,6 +676,17 @@ class PlansScreen(BaseScreen):
             name = name_input.text.strip()
             if name:
                 plan["name"] = name
+            for day in plan["days"]:
+                for exercise in day["exercises"]:
+                    try:
+                        rest_seconds = int(exercise.get("rest_seconds", 60))
+                    except (TypeError, ValueError):
+                        self.app_ref.message("Inserisci il recupero in secondi, da 0 a 3600.")
+                        return
+                    if not 0 <= rest_seconds <= 3600:
+                        self.app_ref.message("Inserisci il recupero in secondi, da 0 a 3600.")
+                        return
+                    exercise["rest_seconds"] = rest_seconds
             self.app_ref.store.save()
             popup.dismiss()
             self.refresh()
@@ -744,7 +779,10 @@ class WorkoutScreen(BaseScreen):
 
     def add_exercise_form(self, exercise):
         notes = exercise.get("notes", "").strip()
-        card_height = 130 + len(exercise["sets"]) * 52 + (50 if notes else 0)
+        rest_seconds = exercise.get("rest_seconds", 60)
+        card_height = 140 + len(exercise["sets"]) * 52 + (50 if notes else 0)
+        if rest_seconds:
+            card_height += 28
         card = Card(orientation="vertical", size_hint_y=None, height=dp(card_height))
         name_label = ui_label(exercise["name"], 16, TEXT, height=dp(44), bold=True)
         name_label.bind(width=lambda label, width: setattr(label, "text_size", (width, None)))
@@ -754,6 +792,10 @@ class WorkoutScreen(BaseScreen):
             notes_label.bind(width=lambda label, width: setattr(label, "text_size", (width, None)))
             card.add_widget(notes_label)
         card.add_widget(ui_label("Serie     Ripetizioni          Peso (kg)", 11, MUTED))
+        if rest_seconds:
+            card.add_widget(ui_label(
+                "Recupero tra le serie: {} sec".format(rest_seconds), 13, MUTED
+            ))
         fields = []
         for index, set_data in enumerate(exercise["sets"], start=1):
             row = BoxLayout(size_hint_y=None, height=dp(42), spacing=dp(8))
@@ -858,6 +900,59 @@ class WorkoutScreen(BaseScreen):
 class HistoryScreen(BaseScreen):
     def __init__(self, app, **kwargs):
         super().__init__(app, "Storico allenamenti", name="history", **kwargs)
+        self.selection_mode = False
+        self.selected_sessions = []
+
+    def toggle_selection_mode(self, *_):
+        self.selection_mode = not self.selection_mode
+        if not self.selection_mode:
+            self.selected_sessions.clear()
+        self.refresh()
+
+    def toggle_session_selection(self, session, *_):
+        if any(selected is session for selected in self.selected_sessions):
+            self.selected_sessions = [
+                selected for selected in self.selected_sessions if selected is not session
+            ]
+        else:
+            self.selected_sessions.append(session)
+        self.refresh()
+
+    def confirm_delete_sessions(self, *_):
+        if not self.selected_sessions:
+            return
+        count = len(self.selected_sessions)
+        content = BoxLayout(orientation="vertical", spacing=dp(12), padding=dp(14))
+        content.add_widget(ui_label(
+            "Vuoi eliminare definitivamente {} allenamenti selezionati? "
+            "I dati non saranno più disponibili nello storico e nelle analisi.".format(count),
+            13, TEXT, height=dp(72)
+        ))
+        popup = Popup(
+            title="Eliminare gli allenamenti?",
+            content=content,
+            size_hint=(0.9, 0.4),
+        )
+        actions = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(8))
+        actions.add_widget(make_button(
+            "Annulla", lambda *_: popup.dismiss(), color=CARD_ALT, height=dp(44)
+        ))
+        actions.add_widget(make_button(
+            "Elimina", lambda *_: self.delete_selected_sessions(popup),
+            color=(0.45, 0.18, 0.22, 1), height=dp(44)
+        ))
+        content.add_widget(actions)
+        popup.open()
+
+    def delete_selected_sessions(self, popup):
+        selected_ids = {id(session) for session in self.selected_sessions}
+        sessions = self.app_ref.store.data["sessions"]
+        sessions[:] = [session for session in sessions if id(session) not in selected_ids]
+        self.app_ref.store.save()
+        self.selected_sessions.clear()
+        self.selection_mode = False
+        popup.dismiss()
+        self.refresh()
 
     def refresh(self, *_):
         self.body.clear_widgets()
@@ -889,6 +984,24 @@ class HistoryScreen(BaseScreen):
             ))
             return
 
+        selection_actions = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(8))
+        selection_actions.add_widget(make_button(
+            "Annulla selezione" if self.selection_mode else "Seleziona",
+            self.toggle_selection_mode,
+            color=CARD_ALT,
+            height=dp(44),
+        ))
+        if self.selection_mode:
+            delete_button = make_button(
+                "Elimina ({})".format(len(self.selected_sessions)),
+                self.confirm_delete_sessions,
+                color=(0.45, 0.18, 0.22, 1),
+                height=dp(44),
+            )
+            delete_button.disabled = not self.selected_sessions
+            selection_actions.add_widget(delete_button)
+        self.body.add_widget(selection_actions)
+
         for session in recent_sessions:
             completed_at = session.get("completed_at")
             if completed_at:
@@ -907,14 +1020,17 @@ class HistoryScreen(BaseScreen):
             card = Card(
                 orientation="vertical",
                 size_hint_y=None,
-                height=dp(86),
+                height=dp(86 + (46 if self.selection_mode else 0)),
             )
             day_name = session.get("day_name", "Allenamento")
+            base_card_height = dp(86 + (46 if self.selection_mode else 0))
             details = BoxLayout(
                 orientation="vertical",
                 spacing=dp(4),
                 size_hint_y=None,
                 height=0,
+                opacity=0,
+                disabled=True,
             )
             details.add_widget(ui_label(
                 "{} · {}".format(session.get("plan_name", "Scheda"), day_name),
@@ -935,7 +1051,9 @@ class HistoryScreen(BaseScreen):
             def toggle_details(_button, detail_box=details, parent_card=card):
                 is_open = detail_box.height == 0
                 detail_box.height = detail_box.minimum_height if is_open else 0
-                parent_card.height = dp(86) + detail_box.height
+                detail_box.opacity = 1 if is_open else 0
+                detail_box.disabled = not is_open
+                parent_card.height = base_card_height + detail_box.height
 
             card.add_widget(make_button(
                 "{}     {}".format(date_label, day_name),
@@ -943,6 +1061,17 @@ class HistoryScreen(BaseScreen):
                 color=CARD_ALT,
                 height=dp(44),
             ))
+            if self.selection_mode:
+                is_selected = any(selected is session for selected in self.selected_sessions)
+                select_button = make_button(
+                    "✓ Selezionato" if is_selected else "Seleziona allenamento",
+                    lambda _button, selected=session: self.toggle_session_selection(selected),
+                    color=MINT if is_selected else CARD_ALT,
+                    height=dp(36),
+                )
+                select_button.size_hint_x = None
+                select_button.width = dp(190)
+                card.add_widget(select_button)
             card.add_widget(details)
             self.body.add_widget(card)
 
@@ -1386,6 +1515,7 @@ class GymTrackerApp(App):
             "exercises": [
                 {"name": exercise["name"],
                  "notes": exercise.get("notes", ""),
+                 "rest_seconds": exercise.get("rest_seconds", 60),
                  "sets": [{"reps": "", "weight": ""} for _ in range(exercise.get("sets", 3))]}
                 for exercise in day["exercises"]
             ],
